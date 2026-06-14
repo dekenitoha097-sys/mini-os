@@ -1,44 +1,39 @@
+CC = gcc
+CFLAGS = -m32 -ffreestanding -I kernel/include
+LDFLAGS = -m elf_i386 -T linker.ld
+
+# Tous les fichiers C du noyau
+C_SOURCES := $(wildcard kernel/src/*.c)
+
+# Les fichiers .o correspondants
+OBJECTS := $(patsubst kernel/src/%.c,%.o,$(C_SOURCES))
+
 all: os.iso
 
-# Compilation
-kernel.o: kernel/src/kernel.c
-	gcc -m32 -ffreestanding -I kernel/include -c kernel/src/kernel.c -o kernel.o
+# Compilation automatique des .c en .o
+%.o: kernel/src/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
-screen.o: kernel/src/screen.c
-	gcc -m32 -ffreestanding -I kernel/include -c kernel/src/screen.c -o screen.o
-
-kbd.o: kernel/src/kbd.c
-	gcc -m32 -ffreestanding -I kernel/include -c kernel/src/kbd.c -o kbd.o
-
-shell.o: kernel/src/shell.c
-	gcc -m32 -ffreestanding -I kernel/include -c kernel/src/shell.c -o shell.o
-
-time_date.o: kernel/src/time_date.c
-	gcc -m32 -ffreestanding -I kernel/include -c kernel/src/time_date.c -o time_date.o
-
-str.o: kernel/src/str.c
-	gcc -m32 -ffreestanding -I kernel/include -c kernel/src/str.c -o str.o
-
-
-# Boot
-multiboot.o:
+# Compilation du bootloader
+multiboot.o: boot/multiboot.asm
 	nasm -f elf32 boot/multiboot.asm -o multiboot.o
 
-# Link
-kernel.bin: multiboot.o kernel.o screen.o kbd.o shell.o time_date.o str.o
-	ld -m elf_i386 -T linker.ld -o kernel.bin multiboot.o kernel.o screen.o kbd.o shell.o time_date.o str.o
+# Édition de liens
+kernel.bin: multiboot.o $(OBJECTS)
+	ld $(LDFLAGS) -o kernel.bin multiboot.o $(OBJECTS)
 
-# ISO
+# Création de l'ISO
 os.iso: kernel.bin
 	mkdir -p iso/boot/grub
 	cp kernel.bin iso/boot/kernel.bin
 	cp boot/grub.cfg iso/boot/grub/grub.cfg
 	grub-mkrescue -o os.iso iso
 
-# Run
+# Lancement dans QEMU
 run: os.iso
 	qemu-system-x86_64 -cdrom os.iso
 
-# Clean
+# Nettoyage
 clean:
-	rm -rf *.o *.bin *.iso iso
+	rm -f *.o *.bin *.iso
+	rm -rf iso
