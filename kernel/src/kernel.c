@@ -3,14 +3,10 @@
 
 void kernel_main()
 {
-
-    put_char('T');
-    put_char('e');
-    put_char('s');
-    put_char('t');
-
+    printk("Bienvenue dans mon OS v1.0\n");
+    
     while (1)
     {
-        
+        __asm__ volatile ("hlt");
     }
 }
