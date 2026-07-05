@@ -13,5 +13,3 @@ mini-os/
 ├── linker.ld
 └── Makefile
 ```
-
-
